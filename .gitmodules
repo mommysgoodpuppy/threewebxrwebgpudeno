@@ -8,12 +8,3 @@
 [submodule "submodules/xr"]
 	path = submodules/xr
 	url = https://github.com/pmndrs/xr.git
-[submodule "submodules/uikit"]
-	path = submodules/uikit
-	url = https://github.com/pmndrs/uikit.git
-[submodule "submodules/react-three-fiber"]
-	path = submodules/react-three-fiber
-	url = https://github.com/pmndrs/react-three-fiber.git
-[submodule "submodules/three-msdf-text-utils"]
-	path = submodules/three-msdf-text-utils
-	url = https://github.com/leochocolat/three-msdf-text-utils.git
