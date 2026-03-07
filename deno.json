@@ -1,0 +1,20 @@
+{ 
+  "imports": {
+    "@react-three/fiber": "npm:@react-three/fiber@^9.5.0",
+    "@sdl3/sdl3-deno": "jsr:@sdl3/sdl3-deno@^2.1.0",
+    "@types/react": "npm:@types/react@^19.2.8",
+    "@types/three": "npm:@types/three@^0.182.0",
+    "iwer": "./submodules/iwer/build/iwer.module.js",
+    "react": "npm:react@^19.2.3",
+    "three": "./submodules/three.js/build/three.webgpu.js",
+    "three/addons/": "./submodules/three.js/examples/jsm/",
+    "three/tsl": "./submodules/three.js/build/three.tsl.js",
+    "three/webgpu": "./submodules/three.js/build/three.webgpu.js"
+  },
+  "tasks": {
+    "build":"deno bundle --minify -o r3f.js r3f.tsx && deno compile -A --unstable-webgpu --include ./SDL2.dll ./r3f.js",
+    "dev": "deno run -A --unstable-webgpu main.ts",
+    "dev:xr": "deno run -A --unstable-webgpu mainxr.ts",
+    "dev:xr:cubes": "deno run -A --unstable-webgpu mainxrcubes.ts"
+  }
+}

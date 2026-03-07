@@ -1,0 +1,7 @@
+[submodule "submodules/three.js"]
+	path = submodules/three.js
+	url = https://github.com/cabanier/three.js.git
+	branch = webgpu_webxr
+[submodule "submodules/iwer"]
+	path = submodules/iwer
+	url = https://github.com/meta-quest/immersive-web-emulation-runtime.git
