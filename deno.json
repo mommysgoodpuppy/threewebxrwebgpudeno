@@ -1,20 +1,54 @@
-{ 
+{
+  "unstable": ["sloppy-imports"],
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
   "imports": {
+    "@pmndrs/msdfonts": "./submodules/uikit/packages/msdfonts/src/index.ts",
+    "@pmndrs/uikit": "./submodules/uikit/packages/uikit/src/index.ts",
+    "@pmndrs/uikit-pub-sub": "./submodules/uikit/packages/pub-sub/src/index.ts",
+    "@preact/signals-core": "npm:@preact/signals-core@^1.12.1",
+    "@react-three/uikit": "./submodules/uikit/packages/react/src/index.tsx",
+    "@zappar/msdf-generator": "npm:@zappar/msdf-generator@^1.2.4",
     "@react-three/fiber": "npm:@react-three/fiber@^9.5.0",
+    "@react-three/xr": "./submodules/xr/packages/react/xr/src/index.ts",
+    "@pmndrs/pointer-events": "./submodules/xr/packages/pointer-events/src/index.ts",
+    "@pmndrs/pointer-events/": "./submodules/xr/packages/pointer-events/src/",
+    "@pmndrs/xr": "./submodules/xr/packages/xr/src/index.ts",
+    "@pmndrs/xr/": "./submodules/xr/packages/xr/src/",
+    "@iwer/devui": "npm:@iwer/devui@^1.1.1",
+    "@iwer/sem": "npm:@iwer/sem@~0.2.5",
     "@sdl3/sdl3-deno": "jsr:@sdl3/sdl3-deno@^2.1.0",
     "@types/react": "npm:@types/react@^19.2.8",
     "@types/three": "npm:@types/three@^0.182.0",
     "iwer": "./submodules/iwer/build/iwer.module.js",
+    "iwer/": "./submodules/iwer/lib/",
+    "meshline": "npm:meshline@^3.3.1",
+    "quad-indices": "npm:quad-indices@^2.0.1",
     "react": "npm:react@^19.2.3",
+    "react-dom/client": "npm:react-dom@^19.2.3/client",
+    "suspend-react": "npm:suspend-react@^0.1.3",
     "three": "./submodules/three.js/build/three.webgpu.js",
+    "three-msdf-text-utils": "npm:three-msdf-text-utils@^1.4.1",
+    "three/examples/jsm/": "./submodules/three.js/examples/jsm/",
+    "three/src/": "./submodules/three.js/src/",
     "three/addons/": "./submodules/three.js/examples/jsm/",
     "three/tsl": "./submodules/three.js/build/three.tsl.js",
-    "three/webgpu": "./submodules/three.js/build/three.webgpu.js"
+    "three/webgpu": "./submodules/three.js/build/three.webgpu.js",
+    "word-wrapper": "npm:word-wrapper@^1.0.7",
+    "yoga-layout": "npm:yoga-layout@^3.2.1",
+    "yoga-layout/load": "npm:yoga-layout@^3.2.1/load",
+    "tunnel-rat": "npm:tunnel-rat@^0.1.2",
+    "zustand": "npm:zustand@^4.5.2",
+    "zustand/shallow": "npm:zustand@^4.5.2/shallow",
+    "zustand/vanilla": "npm:zustand@^4.5.2/vanilla"
   },
   "tasks": {
     "build":"deno bundle --minify -o r3f.js r3f.tsx && deno compile -A --unstable-webgpu --include ./SDL2.dll ./r3f.js",
     "dev": "deno run -A --unstable-webgpu main.ts",
     "dev:xr": "deno run -A --unstable-webgpu mainxr.ts",
-    "dev:xr:cubes": "deno run -A --unstable-webgpu mainxrcubes.ts"
+    "dev:xr:cubes": "deno run -A --unstable-webgpu mainxrcubes.ts",
+    "dev:xr:r3f": "deno run -A --unstable-webgpu mainxrr3f.tsx"
   }
 }
