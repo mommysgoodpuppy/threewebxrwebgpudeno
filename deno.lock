@@ -22,6 +22,7 @@
     "npm:react-dom@^19.2.3": "19.2.4_react@19.2.4",
     "npm:react@^19.2.3": "19.2.4",
     "npm:suspend-react@~0.1.3": "0.1.3_react@19.2.4",
+    "npm:three-msdf-text-utils@1.4.1": "1.4.1_three@0.183.2",
     "npm:three-msdf-text-utils@^1.4.1": "1.4.1_three@0.183.2",
     "npm:tunnel-rat@~0.1.2": "0.1.2_@types+react@19.2.14_react@19.2.4",
     "npm:word-wrapper@^1.0.7": "1.0.7",

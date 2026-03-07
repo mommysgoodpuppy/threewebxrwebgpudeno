@@ -24,6 +24,7 @@
     "@types/three": "npm:@types/three@^0.182.0",
     "iwer": "./submodules/iwer/build/iwer.module.js",
     "iwer/": "./submodules/iwer/lib/",
+    "fs": "node:fs",
     "meshline": "npm:meshline@^3.3.1",
     "quad-indices": "npm:quad-indices@^2.0.1",
     "react": "npm:react@^19.2.3",
@@ -49,6 +50,7 @@
     "dev": "deno run -A --unstable-webgpu main.ts",
     "dev:xr": "deno run -A --unstable-webgpu mainxr.ts",
     "dev:xr:cubes": "deno run -A --unstable-webgpu mainxrcubes.ts",
-    "dev:xr:r3f": "deno run -A --unstable-webgpu mainxrr3f.tsx"
+    "dev:xr:r3f": "deno run -A --unstable-webgpu mainxrr3f.tsx",
+    "setup:submodules": "deno run -A .\\scripts\\setup-submodules.ts"
   }
 }

@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
 import { PNG } from "npm:pngjs";
-import MSDFTextGeometry from "./submodules/three-msdf-text-utils/src/MSDFTextGeometry/index.js";
-import MSDFTextNodeMaterial from "./submodules/three-msdf-text-utils/src/MSDFTextNodeMaterial/index.js";
+import { MSDFTextGeometry, MSDFTextNodeMaterial } from "./vendor/three-msdf-text-utils/index.ts";
 
 type MsdfFontAssets = {
   atlas: THREE.Texture;
@@ -13,8 +12,8 @@ type MsdfFontAssets = {
 let fontAssetsPromise: Promise<MsdfFontAssets> | undefined;
 
 async function loadMsdfFontAssets(): Promise<MsdfFontAssets> {
-  const fontPath = "C:/GIT/threewebxrwebgpudeno/submodules/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt";
-  const atlasPath = "C:/GIT/threewebxrwebgpudeno/submodules/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png";
+  const fontPath = new URL(import.meta.resolve("three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt"));
+  const atlasPath = new URL(import.meta.resolve("three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png"));
 
   const [fontText, atlasBytes] = await Promise.all([
     Deno.readTextFile(fontPath),
@@ -103,8 +102,8 @@ function adaptMaterialForUIKit(
   material: InstanceType<typeof MSDFTextNodeMaterial>,
   color: string | number | THREE.Color,
 ) {
-  const colorUniform = (material as { color: { value: THREE.Color } }).color;
-  const opacityUniform = (material as { opacity: { value: number } }).opacity;
+  const colorUniform = (material as unknown as { color: { value: THREE.Color } }).color;
+  const opacityUniform = (material as unknown as { opacity: { value: number } }).opacity;
   const compatColor = new THREE.Color(color);
   colorUniform.value.copy(compatColor);
 
@@ -180,12 +179,12 @@ export function MsdfText({
       return null;
     }
     const nextMaterial = new MSDFTextNodeMaterial({
-      map: assets.atlas,
-      color,
+      map: assets.atlas as any,
+      color: color as any,
       opacity,
     });
     adaptMaterialForUIKit(nextMaterial, color);
-    nextMaterial.side = THREE.DoubleSide;
+    nextMaterial.side = THREE.DoubleSide as any;
     nextMaterial.transparent = true;
     nextMaterial.alphaTest = 0.01;
     nextMaterial.depthWrite = false;
