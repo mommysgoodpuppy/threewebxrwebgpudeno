@@ -12,8 +12,8 @@ type MsdfFontAssets = {
 let fontAssetsPromise: Promise<MsdfFontAssets> | undefined;
 
 async function loadMsdfFontAssets(): Promise<MsdfFontAssets> {
-  const fontPath = new URL(import.meta.resolve("three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt"));
-  const atlasPath = new URL(import.meta.resolve("three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png"));
+  const fontPath = new URL("./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt", import.meta.url);
+  const atlasPath = new URL("./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png", import.meta.url);
 
   const [fontText, atlasBytes] = await Promise.all([
     Deno.readTextFile(fontPath),
