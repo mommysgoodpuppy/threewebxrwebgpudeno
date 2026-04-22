@@ -3,6 +3,7 @@ import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
 import { PNG } from "npm:pngjs";
 import { MSDFTextGeometry, MSDFTextNodeMaterial } from "./vendor/three-msdf-text-utils/index.ts";
+import type { WebXRRaythreeTextUserData } from "../../classes/webxrRaythreeUi.ts";
 
 type MsdfFontAssets = {
   atlas: THREE.Texture;
@@ -12,8 +13,14 @@ type MsdfFontAssets = {
 let fontAssetsPromise: Promise<MsdfFontAssets> | undefined;
 
 async function loadMsdfFontAssets(): Promise<MsdfFontAssets> {
-  const fontPath = new URL("./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt", import.meta.url);
-  const atlasPath = new URL("./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png", import.meta.url);
+  const fontPath = new URL(
+    "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt",
+    import.meta.url,
+  );
+  const atlasPath = new URL(
+    "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png",
+    import.meta.url,
+  );
 
   const [fontText, atlasBytes] = await Promise.all([
     Deno.readTextFile(fontPath),
@@ -86,7 +93,9 @@ export async function measureMsdfText(
       maxY = Math.max(maxY, y);
     }
   }
-  const lineHeight = Number((assets.font as { common?: { lineHeight?: number } }).common?.lineHeight ?? 84);
+  const lineHeight = Number(
+    (assets.font as { common?: { lineHeight?: number } }).common?.lineHeight ?? 84,
+  );
   const scale = fontSize / lineHeight;
   geometry.dispose();
   return {
@@ -202,8 +211,27 @@ export function MsdfText({
     return null;
   }
 
+  geometry.computeBoundingBox();
   const layoutWidth = (geometry.layout?.width ?? 0) * fontSize;
-  const xOffset = anchorX === "center" ? -layoutWidth * 0.5 : anchorX === "right" ? -layoutWidth : 0;
+  const xOffset = anchorX === "center"
+    ? -layoutWidth * 0.5
+    : anchorX === "right"
+    ? -layoutWidth
+    : 0;
+  const colorValue = new THREE.Color(color);
+  const textUserData: WebXRRaythreeTextUserData = {
+    text,
+    color: [colorValue.r, colorValue.g, colorValue.b, opacity],
+    fontSize,
+    align,
+    anchorX,
+    bounds: {
+      minX: geometry.boundingBox?.min.x ?? 0,
+      maxX: geometry.boundingBox?.max.x ?? 0,
+      minY: geometry.boundingBox?.min.y ?? 0,
+      maxY: geometry.boundingBox?.max.y ?? 0,
+    },
+  };
 
   return React.createElement("mesh", {
     geometry,
@@ -211,5 +239,6 @@ export function MsdfText({
     rotation: [Math.PI, 0, 0],
     position: [position[0] + xOffset, position[1], position[2]],
     scale: [fontSize, fontSize, fontSize],
+    userData: { raythreeUiText: textUserData },
   });
 }
