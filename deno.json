@@ -1,8 +1,14 @@
 {
-  "unstable": ["sloppy-imports"],
   "compilerOptions": {
     "jsx": "react-jsx",
-    "jsxImportSource": "react"
+    "jsxImportSource": "react",
+    "lib": [
+      "deno.window",
+      "deno.unstable",
+      "node",
+      "dom"
+    ],
+    "skipLibCheck": true
   },
   "imports": {
     "@pmndrs/msdfonts": "./submodules/uikit/packages/msdfonts/src/index.ts",
@@ -22,8 +28,9 @@
     "@sdl3/sdl3-deno": "jsr:@sdl3/sdl3-deno@^2.1.0",
     "@types/react": "npm:@types/react@^19.2.8",
     "@types/three": "npm:@types/three@^0.182.0",
-    "iwer": "./submodules/iwer/build/iwer.module.js",
-    "iwer/": "./submodules/iwer/lib/",
+    "gl-matrix": "npm:gl-matrix@^3.4.4",
+    "iwer": "./submodules/iwer/src/index.ts",
+    "iwer/": "./submodules/iwer/",
     "fs": "node:fs",
     "meshline": "npm:meshline@^3.3.1",
     "quad-indices": "npm:quad-indices@^2.0.1",
@@ -37,6 +44,7 @@
     "three/addons/": "./submodules/three.js/examples/jsm/",
     "three/tsl": "./submodules/three.js/build/three.tsl.js",
     "three/webgpu": "./submodules/three.js/build/three.webgpu.js",
+    "webxr-layers-polyfill": "npm:webxr-layers-polyfill@^1.1.0",
     "word-wrapper": "npm:word-wrapper@^1.0.7",
     "yoga-layout": "npm:yoga-layout@^3.2.1",
     "yoga-layout/load": "npm:yoga-layout@^3.2.1/load",
