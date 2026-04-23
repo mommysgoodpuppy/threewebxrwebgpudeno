@@ -1,13 +1,15 @@
 [submodule "submodules/three.js"]
 	path = submodules/three.js
-	url = https://github.com/cabanier/three.js.git
-	branch = webgpu_webxr
+	url = https://github.com/mommysgoodpuppy/three.js.git
+	branch = petplay
 [submodule "submodules/iwer"]
 	path = submodules/iwer
-	url = https://github.com/meta-quest/immersive-web-emulation-runtime.git
+	url = https://github.com/mommysgoodpuppy/immersive-web-emulation-runtime.git
+	branch = petplay
 [submodule "submodules/xr"]
 	path = submodules/xr
 	url = https://github.com/pmndrs/xr.git
 [submodule "submodules/uikit"]
 	path = submodules/uikit
-	url = https://github.com/pmndrs/uikit.git
+	url = https://github.com/mommysgoodpuppy/uikit.git
+	branch = petplay
