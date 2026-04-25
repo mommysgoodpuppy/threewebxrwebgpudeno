@@ -23,6 +23,10 @@ import { computed } from '@preact/signals-core'
 import { Properties } from '../../submodules/uikit/packages/uikit/src/properties/index.ts'
 import { RootContext } from '../context.ts'
 import type { Component } from '../components/component.ts'
+import {
+  registerInstancedPanelMeshForRaythreeMeshLowerer,
+  unregisterInstancedPanelMeshForRaythreeMeshLowerer,
+} from '../raylibUikitMeshLowererRegistry.ts'
 
 export type ShadowProperties = {
   receiveShadow?: boolean
@@ -120,6 +124,14 @@ export class PanelGroupManager {
         fn(group)
       }
     }
+  }
+
+  /**
+   * All instanced uikit groups (same objects WebGPU draws one material per).
+   * Raylib UI replication should read panel instances from these groups, not by scene heuristics.
+   */
+  forEachGroup(fn: (group: InstancedPanelGroup) => void) {
+    this.traverse(fn)
   }
 
   getGroup({ majorIndex, minorIndex }: OrderInfo, properties: Required<PanelGroupProperties>) {
@@ -322,6 +334,7 @@ export class InstancedPanelGroup {
     const oldBufferSize = this.bufferElementSize
     this.bufferElementSize = Math.ceil(this.elementCount * 1.5)
     if (this.mesh != null) {
+      unregisterInstancedPanelMeshForRaythreeMeshLowerer(this.mesh)
       this.mesh.dispose()
       this.object.remove(this.mesh)
     }
@@ -374,6 +387,12 @@ export class InstancedPanelGroup {
     this.mesh.receiveShadow = this.panelGroupProperties.receiveShadow
     this.mesh.castShadow = this.panelGroupProperties.castShadow
     this.object.addUnsafe(this.mesh)
+    registerInstancedPanelMeshForRaythreeMeshLowerer(this.mesh)
+  }
+
+  /** The instanced draw mesh; same as the WebGPU path, `undefined` before first layout/resize. */
+  getInstancedPanelMesh(): InstancedPanelMesh | undefined {
+    return this.mesh
   }
 
   destroy() {
@@ -384,6 +403,7 @@ export class InstancedPanelGroup {
       }
       return
     }
+    unregisterInstancedPanelMeshForRaythreeMeshLowerer(this.mesh)
     this.object.remove(this.mesh)
     this.mesh?.dispose()
     if (!(this.instanceMaterial instanceof MeshBasicNodeMaterial)) {
