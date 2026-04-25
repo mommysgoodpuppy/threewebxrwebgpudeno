@@ -6,7 +6,7 @@ import {
   useFrame,
   useStore,
   useThree,
-} from "@react-three/fiber";
+} from "@react-three/fiber/webgpu";
 import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
 import * as THREE from "three/webgpu";
 import type { RenderContext } from "./local-uikit/context.ts";
