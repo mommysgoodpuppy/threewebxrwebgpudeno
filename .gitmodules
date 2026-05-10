@@ -9,6 +9,7 @@
 [submodule "submodules/xr"]
 	path = submodules/xr
 	url = https://github.com/pmndrs/xr.git
+	branch = main
 [submodule "submodules/uikit"]
 	path = submodules/uikit
 	url = https://github.com/mommysgoodpuppy/uikit.git
