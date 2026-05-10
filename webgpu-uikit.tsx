@@ -1,6 +1,10 @@
 import React, { forwardRef, useEffect, useState } from "react";
 import * as THREE from "three/webgpu";
-import { Container as UIKitContainer, Content, type ContainerProperties as UIKitContainerProperties } from "./uikit-r3f.tsx";
+import {
+  Container as UIKitContainer,
+  type ContainerProperties as UIKitContainerProperties,
+  Content,
+} from "./uikit-r3f.tsx";
 import { measureMsdfText, MsdfText } from "./msdf-text.tsx";
 
 type ColorValue = string | number;
@@ -10,9 +14,11 @@ export type ContainerProps = UIKitContainerProperties & {
   backgroundOpacity?: number;
 };
 
-export const Container = forwardRef<any, ContainerProps>(({ backgroundOpacity, opacity, ...props }, forwardedRef) => {
-  return <UIKitContainer ref={forwardedRef} opacity={backgroundOpacity ?? opacity} {...props} />;
-});
+export const Container = forwardRef<any, ContainerProps>(
+  ({ backgroundOpacity, opacity, ...props }, forwardedRef) => {
+    return <UIKitContainer ref={forwardedRef} opacity={backgroundOpacity ?? opacity} {...props} />;
+  },
+);
 
 type TextProps = Omit<UIKitContainerProperties, "children" | "width" | "height" | "color"> & {
   children: React.ReactNode;
@@ -23,7 +29,7 @@ type TextProps = Omit<UIKitContainerProperties, "children" | "width" | "height" 
   textAlign?: "left" | "center" | "right";
 };
 
-export function Text({
+export const Text = forwardRef<any, TextProps>(function Text({
   children,
   color = "#ffffff",
   fontSize = 16,
@@ -31,7 +37,7 @@ export function Text({
   pixelSize = 0.001,
   textAlign = "left",
   ...props
-}: TextProps) {
+}: TextProps, forwardedRef) {
   const text = String(children ?? "");
   const [metrics, setMetrics] = useState<{
     width: number;
@@ -70,20 +76,33 @@ export function Text({
 
   return (
     <Content width={width} height={height} flexShrink={0} {...props}>
-      <MsdfText text={text} color={color} fontSize={worldScale} align={textAlign} position={textPosition} />
+      <MsdfText
+        ref={forwardedRef}
+        text={text}
+        color={color}
+        fontSize={worldScale}
+        align={textAlign}
+        position={textPosition}
+      />
     </Content>
   );
-}
+});
 
 type ButtonProps = ContainerProps & {
   hover?: Pick<ContainerProps, "backgroundColor" | "backgroundOpacity">;
   onClick?: () => void;
 };
 
-export function Button({ hover, onClick, children, backgroundColor, backgroundOpacity, ...props }: ButtonProps) {
+export function Button(
+  { hover, onClick, children, backgroundColor, backgroundOpacity, ...props }: ButtonProps,
+) {
   const [hovered, setHovered] = useState(false);
-  const activeBackgroundColor = hovered ? hover?.backgroundColor ?? backgroundColor : backgroundColor;
-  const activeBackgroundOpacity = hovered ? hover?.backgroundOpacity ?? backgroundOpacity : backgroundOpacity;
+  const activeBackgroundColor = hovered
+    ? hover?.backgroundColor ?? backgroundColor
+    : backgroundColor;
+  const activeBackgroundOpacity = hovered
+    ? hover?.backgroundOpacity ?? backgroundOpacity
+    : backgroundOpacity;
 
   return (
     <Container

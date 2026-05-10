@@ -17,7 +17,7 @@
     "@preact/signals-core": "npm:@preact/signals-core@^1.12.1",
     "@react-three/uikit": "./submodules/uikit/packages/react/src/index.tsx",
     "@zappar/msdf-generator": "npm:@zappar/msdf-generator@^1.2.4",
-    "@react-three/fiber": "../../classes/r3fCompat.ts",
+    "@react-three/fiber": "../../classes/r3fWebgpuCompat.ts",
     "@react-three/fiber/webgpu": "../../classes/r3fWebgpuCompat.ts",
     "@react-three/xr": "./submodules/xr/packages/react/xr/src/index.ts",
     "@pmndrs/pointer-events": "./submodules/xr/packages/pointer-events/src/index.ts",

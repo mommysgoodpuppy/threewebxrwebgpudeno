@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { forwardRef, useEffect, useMemo, useState } from "react";
 import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
 import { PNG } from "npm:pngjs";
@@ -147,7 +147,7 @@ export type MsdfTextProps = {
   position?: [number, number, number];
 };
 
-export function MsdfText({
+export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
   text,
   color = 0xffffff,
   opacity = 1,
@@ -156,7 +156,7 @@ export function MsdfText({
   align = "left",
   anchorX = "left",
   position = [0, 0, 0],
-}: MsdfTextProps) {
+}: MsdfTextProps, forwardedRef) {
   const [assets, setAssets] = useState<MsdfFontAssets | null>(null);
 
   useEffect(() => {
@@ -234,6 +234,7 @@ export function MsdfText({
   };
 
   return React.createElement("mesh", {
+    ref: forwardedRef,
     geometry,
     material,
     rotation: [Math.PI, 0, 0],
@@ -241,4 +242,4 @@ export function MsdfText({
     scale: [fontSize, fontSize, fontSize],
     userData: { raythreeUiText: textUserData },
   });
-}
+});
