@@ -1,7 +1,3 @@
-[submodule "submodules/three.js"]
-	path = submodules/three.js
-	url = https://github.com/mommysgoodpuppy/three.js.git
-	branch = petplay
 [submodule "submodules/iwer"]
 	path = submodules/iwer
 	url = https://github.com/mommysgoodpuppy/immersive-web-emulation-runtime.git

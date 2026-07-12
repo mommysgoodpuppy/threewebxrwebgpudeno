@@ -1,7 +1,7 @@
 // @deno-types="@types/three/webgpu"
 import * as THREE from "three/webgpu";
-import { BoxLineGeometry } from "./submodules/three.js/examples/jsm/geometries/BoxLineGeometry.js";
-import { XRControllerModelFactory } from "./submodules/three.js/examples/jsm/webxr/XRControllerModelFactory.js";
+import { BoxLineGeometry } from "three/addons/geometries/BoxLineGeometry.js";
+import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { XRDevice, metaQuest3 } from "iwer";
 
 const WIDTH = 1600;
