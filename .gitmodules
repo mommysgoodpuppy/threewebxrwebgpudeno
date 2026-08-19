@@ -4,9 +4,9 @@
 	branch = petplay
 [submodule "submodules/xr"]
 	path = submodules/xr
-	url = https://github.com/pmndrs/xr.git
-	branch = main
+	url = https://github.com/mommysgoodpuppy/xr.git
+	branch = petplay
 [submodule "submodules/uikit"]
 	path = submodules/uikit
-	url = https://github.com/mommysgoodpuppy/uikit.git
-	branch = petplay
+	url = https://github.com/pmndrs/uikit.git
+	branch = main
