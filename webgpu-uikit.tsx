@@ -5,7 +5,7 @@ import {
   type ContainerProperties as UIKitContainerProperties,
   Content,
 } from "./uikit-r3f.tsx";
-import { measureMsdfText, MsdfText } from "./msdf-text.tsx";
+import { DEFAULT_MSDF_FONT, measureMsdfText, type MsdfFontId, MsdfText } from "./msdf-text.tsx";
 
 type ColorValue = string | number;
 
@@ -14,9 +14,18 @@ export type ContainerProps = UIKitContainerProperties & {
   backgroundOpacity?: number;
 };
 
+/**
+ * `backgroundOpacity` is passed through to uikit rather than aliased onto
+ * `opacity`. They are different properties: `opacity` scales the whole element
+ * *including its border and its children*, so an outline-only element —
+ * transparent fill, visible border — rendered as nothing at all when
+ * `backgroundOpacity={0}` was mapped onto it.
+ */
 export const Container = forwardRef<any, ContainerProps>(
-  ({ backgroundOpacity, opacity, ...props }, forwardedRef) => {
-    return <UIKitContainer ref={forwardedRef} opacity={backgroundOpacity ?? opacity} {...props} />;
+  ({ backgroundOpacity, ...props }, forwardedRef) => {
+    return (
+      <UIKitContainer ref={forwardedRef} backgroundOpacity={backgroundOpacity} {...props} />
+    );
   },
 );
 
@@ -27,6 +36,8 @@ type TextProps = Omit<UIKitContainerProperties, "children" | "width" | "height" 
   fontWeight?: string | number;
   pixelSize?: number;
   textAlign?: "left" | "center" | "right";
+  /** Which MSDF atlas to draw from. Icons are just a different font. */
+  font?: MsdfFontId;
 };
 
 export const Text = forwardRef<any, TextProps>(function Text({
@@ -36,6 +47,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
   fontWeight: _fontWeight,
   pixelSize = 0.001,
   textAlign = "left",
+  font = DEFAULT_MSDF_FONT,
   ...props
 }: TextProps, forwardedRef) {
   const text = String(children ?? "");
@@ -53,7 +65,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
 
   useEffect(() => {
     let cancelled = false;
-    measureMsdfText(text, fontSize, undefined, textAlign).then((nextMetrics) => {
+    measureMsdfText(text, fontSize, undefined, textAlign, font).then((nextMetrics) => {
       if (!cancelled) {
         setMetrics(nextMetrics);
       }
@@ -61,7 +73,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
     return () => {
       cancelled = true;
     };
-  }, [fontSize, text, textAlign]);
+  }, [font, fontSize, text, textAlign]);
 
   const width = Math.max(1, Math.ceil(metrics.width));
   const height = Math.max(1, Math.ceil(metrics.height));
@@ -79,6 +91,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
       <MsdfText
         ref={forwardedRef}
         text={text}
+        font={font}
         color={color}
         fontSize={worldScale}
         align={textAlign}

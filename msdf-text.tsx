@@ -10,17 +10,39 @@ type MsdfFontAssets = {
   font: Record<string, unknown>;
 };
 
-let fontAssetsPromise: Promise<MsdfFontAssets> | undefined;
+/**
+ * Fonts available to {@link MsdfText}, by id.
+ *
+ * Icons ride this path rather than getting one of their own: an icon font is a
+ * font, so a glyph is drawn by the same MSDF pipeline as a letter and needs no
+ * image support anywhere in the renderer. The only thing that had to become
+ * plural was the atlas.
+ *
+ * Ligature lookup (`music_note` -> one glyph) is a shaping feature and MSDF
+ * atlases are keyed by codepoint, so icons are addressed by codepoint instead —
+ * see `classes/environment/ui/icons.ts` for the name-to-codepoint table.
+ */
+export const MSDF_FONTS = {
+  roboto: {
+    fnt: "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt",
+    png: "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png",
+  },
+  "material-icons": {
+    fnt: "../../resources/fonts/material-icons/material-icons.fnt",
+    png: "../../resources/fonts/material-icons/material-icons.png",
+  },
+} as const;
 
-async function loadMsdfFontAssets(): Promise<MsdfFontAssets> {
-  const fontPath = new URL(
-    "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.fnt",
-    import.meta.url,
-  );
-  const atlasPath = new URL(
-    "./vendor/three-msdf-text-utils/demo/fonts/roboto/roboto-regular.png",
-    import.meta.url,
-  );
+export type MsdfFontId = keyof typeof MSDF_FONTS;
+
+export const DEFAULT_MSDF_FONT: MsdfFontId = "roboto";
+
+const fontAssetsPromises = new Map<MsdfFontId, Promise<MsdfFontAssets>>();
+
+async function loadMsdfFontAssets(fontId: MsdfFontId): Promise<MsdfFontAssets> {
+  const entry = MSDF_FONTS[fontId];
+  const fontPath = new URL(entry.fnt, import.meta.url);
+  const atlasPath = new URL(entry.png, import.meta.url);
 
   const [fontText, atlasBytes] = await Promise.all([
     Deno.readTextFile(fontPath),
@@ -45,9 +67,15 @@ async function loadMsdfFontAssets(): Promise<MsdfFontAssets> {
   return { atlas, font };
 }
 
-export function getMsdfFontAssets(): Promise<MsdfFontAssets> {
-  fontAssetsPromise ??= loadMsdfFontAssets();
-  return fontAssetsPromise;
+export function getMsdfFontAssets(
+  fontId: MsdfFontId = DEFAULT_MSDF_FONT,
+): Promise<MsdfFontAssets> {
+  let promise = fontAssetsPromises.get(fontId);
+  if (promise == null) {
+    promise = loadMsdfFontAssets(fontId);
+    fontAssetsPromises.set(fontId, promise);
+  }
+  return promise;
 }
 
 export type MsdfTextMetrics = {
@@ -68,8 +96,9 @@ export async function measureMsdfText(
   fontSize: number,
   width?: number,
   align: "left" | "center" | "right" = "left",
+  fontId: MsdfFontId = DEFAULT_MSDF_FONT,
 ): Promise<MsdfTextMetrics> {
-  const assets = await getMsdfFontAssets();
+  const assets = await getMsdfFontAssets(fontId);
   const geometry = new MSDFTextGeometry({
     text,
     font: assets.font,
@@ -145,6 +174,7 @@ export type MsdfTextProps = {
   align?: "left" | "center" | "right";
   anchorX?: "left" | "center" | "right";
   position?: [number, number, number];
+  font?: MsdfFontId;
 };
 
 export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
@@ -156,12 +186,13 @@ export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
   align = "left",
   anchorX = "left",
   position = [0, 0, 0],
+  font = DEFAULT_MSDF_FONT,
 }: MsdfTextProps, forwardedRef) {
   const [assets, setAssets] = useState<MsdfFontAssets | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getMsdfFontAssets().then((nextAssets) => {
+    getMsdfFontAssets(font).then((nextAssets) => {
       if (!cancelled) {
         setAssets(nextAssets);
       }
@@ -169,7 +200,7 @@ export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [font]);
 
   const geometry = useMemo(() => {
     if (assets == null) {
@@ -225,6 +256,7 @@ export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
     fontSize,
     align,
     anchorX,
+    font,
     bounds: {
       minX: geometry.boundingBox?.min.x ?? 0,
       maxX: geometry.boundingBox?.max.x ?? 0,
