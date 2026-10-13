@@ -50,6 +50,18 @@ function useRenderContext(): RenderContext {
   return useMemo(() => ({ requestFrame: invalidate }), [invalidate]);
 }
 
+function isHandlerKey(key: string): boolean {
+  return key.length > 2 && key.startsWith("on") && key[2] >= "A" && key[2] <= "Z";
+}
+
+/** Shallow equality, ignoring React children: they never reach the vanilla component. */
+function sameProps(a: Record<string, unknown>, b: Record<string, unknown>): boolean {
+  if (a === b) return true;
+  const keys = Object.keys(a).filter((key) => key !== "children");
+  if (keys.length !== Object.keys(b).filter((key) => key !== "children").length) return false;
+  return keys.every((key) => Object.is(a[key], b[key]));
+}
+
 function useSetup(ref: { current: any }, inProps: Record<string, unknown>, args: Array<unknown>) {
   useFrame((_, delta) => {
     ref.current?.update(delta * 1000);
@@ -66,8 +78,27 @@ function useSetup(ref: { current: any }, inProps: Record<string, unknown>, args:
     }
   }, [renderer]);
 
+  // Re-applying properties restyles and relayouts the component, so skip it when nothing changed.
+  // Handlers go through stable trampolines: inline ones are new every render, and revealing a
+  // hidden <Activity> re-renders its subtree, which restyled every window for ~0.1 s per show.
+  const latestHandlers = useRef<Record<string, unknown>>({});
+  const trampolines = useRef<Record<string, (...args: unknown[]) => unknown>>({});
+  const applied = useRef<{ component: unknown; props: Record<string, unknown> } | null>(null);
   useEffect(() => {
-    ref.current?.resetProperties(inProps);
+    const component = ref.current;
+    latestHandlers.current = inProps;
+    const props: Record<string, unknown> = {};
+    for (const key in inProps) {
+      const value = inProps[key];
+      props[key] = isHandlerKey(key) && typeof value === "function"
+        ? trampolines.current[key] ??= (...args) =>
+          (latestHandlers.current[key] as (...args: unknown[]) => unknown)?.(...args)
+        : value;
+    }
+    const last = applied.current;
+    if (last != null && last.component === component && sameProps(last.props, props)) return;
+    component?.resetProperties(props);
+    applied.current = { component, props };
   });
 
   useEffect(() => {
@@ -112,14 +143,16 @@ function useSetup(ref: { current: any }, inProps: Record<string, unknown>, args:
 }
 
 function buildVanilla<T>(name: string) {
-  return forwardRef<T, { children?: React.ReactNode } & Record<string, unknown>>(({ children, ...props }, forwardedRef) => {
-    const ref = useRef<any>(null);
-    useImperativeHandle(forwardedRef, () => ref.current, []);
-    const renderContext = useRenderContext();
-    const args = useMemo(() => [undefined, undefined, { renderContext }], [renderContext]);
-    const outProps = useSetup(ref, props, args);
-    return React.createElement(name, { ref, ...outProps }, children as React.ReactNode);
-  });
+  return forwardRef<T, { children?: React.ReactNode } & Record<string, unknown>>(
+    ({ children, ...props }, forwardedRef) => {
+      const ref = useRef<any>(null);
+      useImperativeHandle(forwardedRef, () => ref.current, []);
+      const renderContext = useRenderContext();
+      const args = useMemo(() => [undefined, undefined, { renderContext }], [renderContext]);
+      const outProps = useSetup(ref, props, args);
+      return React.createElement(name, { ref, ...outProps }, children as React.ReactNode);
+    },
+  );
 }
 
 export const Container = buildVanilla<any>("vanillaContainer");
