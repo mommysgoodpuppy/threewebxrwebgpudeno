@@ -1,4 +1,5 @@
-import React, { forwardRef, useEffect, useMemo, useState } from "react";
+import React, { forwardRef, useContext, useEffect, useMemo, useState } from "react";
+import { ConstructWithPropsContext } from "./uikit-r3f.tsx";
 import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
 import { PNG } from "npm:pngjs";
@@ -38,6 +39,8 @@ export type MsdfFontId = keyof typeof MSDF_FONTS;
 export const DEFAULT_MSDF_FONT: MsdfFontId = "roboto";
 
 const fontAssetsPromises = new Map<MsdfFontId, Promise<MsdfFontAssets>>();
+/** Fonts already loaded, readable during render: see {@link ConstructWithPropsContext}. */
+const loadedFontAssets = new Map<MsdfFontId, MsdfFontAssets>();
 
 async function loadMsdfFontAssets(fontId: MsdfFontId): Promise<MsdfFontAssets> {
   const entry = MSDF_FONTS[fontId];
@@ -72,10 +75,25 @@ export function getMsdfFontAssets(
 ): Promise<MsdfFontAssets> {
   let promise = fontAssetsPromises.get(fontId);
   if (promise == null) {
-    promise = loadMsdfFontAssets(fontId);
+    promise = loadMsdfFontAssets(fontId).then((assets) => {
+      loadedFontAssets.set(fontId, assets);
+      return assets;
+    });
     fontAssetsPromises.set(fontId, promise);
   }
   return promise;
+}
+
+/** The font's assets if they have finished loading. */
+export function peekMsdfFontAssets(
+  fontId: MsdfFontId = DEFAULT_MSDF_FONT,
+): MsdfFontAssets | undefined {
+  return loadedFontAssets.get(fontId);
+}
+
+/** Loads every font in {@link MSDF_FONTS}. */
+export function loadAllMsdfFonts(): Promise<unknown> {
+  return Promise.all(Object.keys(MSDF_FONTS).map((id) => getMsdfFontAssets(id as MsdfFontId)));
 }
 
 export type MsdfTextMetrics = {
@@ -98,7 +116,28 @@ export async function measureMsdfText(
   align: "left" | "center" | "right" = "left",
   fontId: MsdfFontId = DEFAULT_MSDF_FONT,
 ): Promise<MsdfTextMetrics> {
-  const assets = await getMsdfFontAssets(fontId);
+  return measureWithAssets(await getMsdfFontAssets(fontId), text, fontSize, width, align);
+}
+
+/** {@link measureMsdfText} if the font has loaded, otherwise undefined. */
+export function measureMsdfTextNow(
+  text: string,
+  fontSize: number,
+  width?: number,
+  align: "left" | "center" | "right" = "left",
+  fontId: MsdfFontId = DEFAULT_MSDF_FONT,
+): MsdfTextMetrics | undefined {
+  const assets = loadedFontAssets.get(fontId);
+  return assets && measureWithAssets(assets, text, fontSize, width, align);
+}
+
+function measureWithAssets(
+  assets: MsdfFontAssets,
+  text: string,
+  fontSize: number,
+  width: number | undefined,
+  align: "left" | "center" | "right",
+): MsdfTextMetrics {
   const geometry = new MSDFTextGeometry({
     text,
     font: assets.font,
@@ -188,19 +227,31 @@ export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
   position = [0, 0, 0],
   font = DEFAULT_MSDF_FONT,
 }: MsdfTextProps, forwardedRef) {
-  const [assets, setAssets] = useState<MsdfFontAssets | null>(null);
+  // Built hidden, take an already loaded font now: a hidden <Activity> runs no effects, so the
+  // text would otherwise stay empty until the first reveal and build then. Visible mounts keep
+  // loading in the effect, which leaves the geometry build to the next frame.
+  const constructWithProps = useContext(ConstructWithPropsContext);
+  const [loaded, setLoaded] = useState<{ font: MsdfFontId; assets: MsdfFontAssets } | null>(
+    () => {
+      const assets = constructWithProps.current ? peekMsdfFontAssets(font) : undefined;
+      return assets ? { font, assets } : null;
+    },
+  );
+  const assets = loaded?.assets ?? null;
+  const loadedFont = loaded?.font;
 
   useEffect(() => {
+    if (loadedFont === font) return;
     let cancelled = false;
     getMsdfFontAssets(font).then((nextAssets) => {
       if (!cancelled) {
-        setAssets(nextAssets);
+        setLoaded({ font, assets: nextAssets });
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [font]);
+  }, [font, loadedFont]);
 
   const geometry = useMemo(() => {
     if (assets == null) {

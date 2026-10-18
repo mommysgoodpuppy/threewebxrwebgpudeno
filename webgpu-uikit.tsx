@@ -1,11 +1,18 @@
-import React, { forwardRef, useEffect, useState } from "react";
+import React, { forwardRef, useContext, useEffect, useState } from "react";
 import * as THREE from "three/webgpu";
 import {
   Container as UIKitContainer,
   type ContainerProperties as UIKitContainerProperties,
+  ConstructWithPropsContext,
   Content,
 } from "./uikit-r3f.tsx";
-import { DEFAULT_MSDF_FONT, measureMsdfText, type MsdfFontId, MsdfText } from "./msdf-text.tsx";
+import {
+  DEFAULT_MSDF_FONT,
+  measureMsdfText,
+  measureMsdfTextNow,
+  type MsdfFontId,
+  MsdfText,
+} from "./msdf-text.tsx";
 
 type ColorValue = string | number;
 
@@ -51,29 +58,48 @@ export const Text = forwardRef<any, TextProps>(function Text({
   ...props
 }: TextProps, forwardedRef) {
   const text = String(children ?? "");
-  const [metrics, setMetrics] = useState<{
-    width: number;
-    height: number;
-    bounds: { minX: number; maxX: number; minY: number; maxY: number };
-    scale: number;
-  }>({
-    width: Math.max(1, text.length * fontSize * 0.6),
-    height: fontSize,
-    bounds: { minX: 0, maxX: fontSize, minY: -fontSize, maxY: 0 },
-    scale: fontSize / 84,
+  const key = `${font}\u0000${fontSize}\u0000${textAlign}\u0000${text}`;
+  // Built hidden, measure now if the font has loaded: a hidden <Activity> runs no effects, so the
+  // text was laid out at the estimate below and relaid out on reveal. Visible mounts keep
+  // measuring in the effect, which leaves that work to a later frame.
+  const constructWithProps = useContext(ConstructWithPropsContext);
+  const [measured, setMeasured] = useState<{
+    key: string;
+    metrics: {
+      width: number;
+      height: number;
+      bounds: { minX: number; maxX: number; minY: number; maxY: number };
+      scale: number;
+    };
+  }>(() => {
+    const now = constructWithProps.current
+      ? measureMsdfTextNow(text, fontSize, undefined, textAlign, font)
+      : undefined;
+    return now ? { key, metrics: now } : {
+      key: "",
+      metrics: {
+        width: Math.max(1, text.length * fontSize * 0.6),
+        height: fontSize,
+        bounds: { minX: 0, maxX: fontSize, minY: -fontSize, maxY: 0 },
+        scale: fontSize / 84,
+      },
+    };
   });
+  const metrics = measured.metrics;
+  const measuredKey = measured.key;
 
   useEffect(() => {
+    if (measuredKey === key) return;
     let cancelled = false;
     measureMsdfText(text, fontSize, undefined, textAlign, font).then((nextMetrics) => {
       if (!cancelled) {
-        setMetrics(nextMetrics);
+        setMeasured({ key, metrics: nextMetrics });
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [font, fontSize, text, textAlign]);
+  }, [font, fontSize, key, measuredKey, text, textAlign]);
 
   const width = Math.max(1, Math.ceil(metrics.width));
   const height = Math.max(1, Math.ceil(metrics.height));
