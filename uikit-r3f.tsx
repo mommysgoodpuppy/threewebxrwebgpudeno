@@ -7,7 +7,15 @@ import {
   useStore,
   useThree,
 } from "@react-three/fiber/webgpu";
-import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from "react";
+import React, {
+  createContext,
+  forwardRef,
+  useContext,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+} from "react";
 import * as THREE from "three/webgpu";
 import type { RenderContext } from "./local-uikit/context.ts";
 import { reversePainterSortStable } from "./submodules/uikit/packages/uikit/src/order.ts";
@@ -62,7 +70,60 @@ function sameProps(a: Record<string, unknown>, b: Record<string, unknown>): bool
   return keys.every((key) => Object.is(a[key], b[key]));
 }
 
-function useSetup(ref: { current: any }, inProps: Record<string, unknown>, args: Array<unknown>) {
+/**
+ * Whether components are being built inside a hidden <Activity>. A hidden Activity builds its
+ * subtree without running effects, so props applied only from the effect leave every component
+ * unstyled until the first reveal, which then restyles them all in one commit (~55 ms when the
+ * window layer was first shown). Under this context, the first render's props are passed to the
+ * constructor instead. Visible mounts keep applying them from the effect: moving that work into
+ * the commit made it land in a single frame.
+ *
+ * The value is a stable ref read once at construction, so toggling it re-renders nothing: a
+ * changing context value re-rendered every component on each show and hide.
+ */
+export const ConstructWithPropsContext = createContext<{ readonly current: boolean }>({
+  current: false,
+});
+
+/**
+ * Binds a component's props to what the vanilla component receives: handlers go through stable
+ * trampolines, because inline ones are new every render.
+ */
+function usePropsBinding() {
+  const constructWithProps = useContext(ConstructWithPropsContext);
+  const binding = useRef<{
+    latestHandlers: Record<string, unknown>;
+    trampolines: Record<string, (...args: unknown[]) => unknown>;
+    constructedWith?: Record<string, unknown>;
+  }>({ latestHandlers: {}, trampolines: {} }).current;
+  const bind = (inProps: Record<string, unknown>) => {
+    const props: Record<string, unknown> = {};
+    for (const key in inProps) {
+      const value = inProps[key];
+      props[key] = isHandlerKey(key) && typeof value === "function"
+        ? binding.trampolines[key] ??= (...args) =>
+          (binding.latestHandlers[key] as (...args: unknown[]) => unknown)?.(...args)
+        : value;
+    }
+    return props;
+  };
+  return {
+    binding,
+    bind,
+    /** For the constructor arguments' memo: the props the component is built with, if any. */
+    construct: (inProps: Record<string, unknown>) =>
+      constructWithProps.current ? binding.constructedWith = bind(inProps) : undefined,
+  };
+}
+
+type PropsBinding = ReturnType<typeof usePropsBinding>;
+
+function useSetup(
+  ref: { current: any },
+  inProps: Record<string, unknown>,
+  args: Array<unknown>,
+  { binding, bind }: PropsBinding,
+) {
   useFrame((_, delta) => {
     ref.current?.update(delta * 1000);
   });
@@ -78,25 +139,23 @@ function useSetup(ref: { current: any }, inProps: Record<string, unknown>, args:
     }
   }, [renderer]);
 
-  // Re-applying properties restyles and relayouts the component, so skip it when nothing changed.
-  // Handlers go through stable trampolines: inline ones are new every render, and revealing a
-  // hidden <Activity> re-renders its subtree, which restyled every window for ~0.1 s per show.
-  const latestHandlers = useRef<Record<string, unknown>>({});
-  const trampolines = useRef<Record<string, (...args: unknown[]) => unknown>>({});
+  // Re-applying properties restyles and relayouts the component, so skip it when nothing changed:
+  // revealing a hidden <Activity> re-renders its subtree, which restyled every window for ~0.1 s
+  // per show. A component still holding its constructor's props has had those applied.
   const applied = useRef<{ component: unknown; props: Record<string, unknown> } | null>(null);
   useEffect(() => {
     const component = ref.current;
-    latestHandlers.current = inProps;
-    const props: Record<string, unknown> = {};
-    for (const key in inProps) {
-      const value = inProps[key];
-      props[key] = isHandlerKey(key) && typeof value === "function"
-        ? trampolines.current[key] ??= (...args) =>
-          (latestHandlers.current[key] as (...args: unknown[]) => unknown)?.(...args)
-        : value;
+    binding.latestHandlers = inProps;
+    const props = bind(inProps);
+    const last = applied.current ??
+      (component != null && binding.constructedWith != null &&
+          component.inputProperties === binding.constructedWith
+        ? { component, props: binding.constructedWith }
+        : null);
+    if (last != null && last.component === component && sameProps(last.props, props)) {
+      applied.current = last;
+      return;
     }
-    const last = applied.current;
-    if (last != null && last.component === component && sameProps(last.props, props)) return;
     component?.resetProperties(props);
     applied.current = { component, props };
   });
@@ -148,8 +207,12 @@ function buildVanilla<T>(name: string) {
       const ref = useRef<any>(null);
       useImperativeHandle(forwardedRef, () => ref.current, []);
       const renderContext = useRenderContext();
-      const args = useMemo(() => [undefined, undefined, { renderContext }], [renderContext]);
-      const outProps = useSetup(ref, props, args);
+      const propsBinding = usePropsBinding();
+      const args = useMemo(
+        () => [propsBinding.construct(props), undefined, { renderContext }],
+        [renderContext],
+      );
+      const outProps = useSetup(ref, props, args, propsBinding);
       return React.createElement(name, { ref, ...outProps }, children as React.ReactNode);
     },
   );
@@ -166,9 +229,10 @@ export const Content = forwardRef<any, ContentProperties>(
       () => (boundingBox == null ? undefined : signal(boundingBox)),
       [boundingBox],
     );
+    const propsBinding = usePropsBinding();
     const args = useMemo(
       () => [
-        undefined,
+        propsBinding.construct(props),
         undefined,
         { renderContext, boundingBox: boundingBoxSignal, remeasureOnChildrenChange },
       ],
@@ -179,7 +243,7 @@ export const Content = forwardRef<any, ContentProperties>(
         ref.current.clippingRect = signal(undefined);
       }
     }, []);
-    const outProps = useSetup(ref, props, args);
+    const outProps = useSetup(ref, props, args, propsBinding);
     return React.createElement("vanillaContent", { ref, ...outProps }, children);
   },
 );
@@ -217,11 +281,12 @@ export const Fullscreen = forwardRef<any, FullscreenProperties>(
     const renderContext = useRenderContext();
     const ref = useRef<any>(null);
     useImperativeHandle(forwardedRef, () => ref.current, []);
+    const propsBinding = usePropsBinding();
     const args = useMemo(
-      () => [renderer, undefined, undefined, { renderContext }],
+      () => [renderer, propsBinding.construct(props), undefined, { renderContext }],
       [renderer, renderContext],
     );
-    const outProps = useSetup(ref, props, args);
+    const outProps = useSetup(ref, props, args, propsBinding);
 
     return createPortal(
       React.createElement("vanillaFullscreen", { ref, ...outProps }, children),
