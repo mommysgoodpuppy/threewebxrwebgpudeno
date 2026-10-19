@@ -168,7 +168,7 @@ class TextLayout {
                         letterIndex,
                     });
 
-                    if (glyph.id === SPACE_ID && lastGlyph.id !== SPACE_ID) {
+                    if (glyph.id === SPACE_ID && lastGlyph && lastGlyph.id !== SPACE_ID) {
                         lineWordIndex++;
                         wordIndex++;
                     }
