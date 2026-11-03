@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext, useEffect, useMemo, useState } from "react";
+import React, { forwardRef, useEffect, useMemo, useState } from "react";
 import { ConstructWithPropsContext } from "./uikit-r3f.tsx";
 import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
@@ -227,13 +227,12 @@ export const MsdfText = forwardRef<any, MsdfTextProps>(function MsdfText({
   position = [0, 0, 0],
   font = DEFAULT_MSDF_FONT,
 }: MsdfTextProps, forwardedRef) {
-  // Built hidden, take an already loaded font now: a hidden <Activity> runs no effects, so the
-  // text would otherwise stay empty until the first reveal and build then. Visible mounts keep
-  // loading in the effect, which leaves the geometry build to the next frame.
-  const constructWithProps = useContext(ConstructWithPropsContext);
+  // Take an already loaded font now. A hidden <Activity> runs no effects, so the text would stay
+  // empty until its first reveal; a visible mount would draw nothing for a frame. The effect is
+  // the fallback for a font that is still loading.
   const [loaded, setLoaded] = useState<{ font: MsdfFontId; assets: MsdfFontAssets } | null>(
     () => {
-      const assets = constructWithProps.current ? peekMsdfFontAssets(font) : undefined;
+      const assets = peekMsdfFontAssets(font);
       return assets ? { font, assets } : null;
     },
   );

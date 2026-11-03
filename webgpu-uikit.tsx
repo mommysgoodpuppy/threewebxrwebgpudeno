@@ -1,9 +1,8 @@
-import React, { forwardRef, useContext, useEffect, useState } from "react";
+import React, { forwardRef, useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as THREE from "three/webgpu";
 import {
   Container as UIKitContainer,
   type ContainerProperties as UIKitContainerProperties,
-  ConstructWithPropsContext,
   Content,
 } from "./uikit-r3f.tsx";
 import {
@@ -59,10 +58,9 @@ export const Text = forwardRef<any, TextProps>(function Text({
 }: TextProps, forwardedRef) {
   const text = String(children ?? "");
   const key = `${font}\u0000${fontSize}\u0000${textAlign}\u0000${text}`;
-  // Built hidden, measure now if the font has loaded: a hidden <Activity> runs no effects, so the
-  // text was laid out at the estimate below and relaid out on reveal. Visible mounts keep
-  // measuring in the effect, which leaves that work to a later frame.
-  const constructWithProps = useContext(ConstructWithPropsContext);
+  // Measure now if the font has loaded. A hidden <Activity> runs no effects, and a visible mount
+  // would lay out at the estimate below for one frame before the effect measured it, flashing at
+  // the estimate's size. The effect is the fallback for a font that is still loading.
   const [measured, setMeasured] = useState<{
     key: string;
     metrics: {
@@ -72,9 +70,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
       scale: number;
     };
   }>(() => {
-    const now = constructWithProps.current
-      ? measureMsdfTextNow(text, fontSize, undefined, textAlign, font)
-      : undefined;
+    const now = measureMsdfTextNow(text, fontSize, undefined, textAlign, font);
     return now ? { key, metrics: now } : {
       key: "",
       metrics: {
@@ -101,6 +97,16 @@ export const Text = forwardRef<any, TextProps>(function Text({
     };
   }, [font, fontSize, key, measuredKey, text, textAlign]);
 
+  // uikit's Content wires its child's transform and bounding box in `notifyAncestorsChanged`, which
+  // it defers to a `setTimeout(0)` after a child is added and never reruns when the child's
+  // geometry is rebuilt. A fresh label drew for a frame or more with the glyph mesh's raw
+  // transform (oversized and out of place), and new text in place kept the old text's box,
+  // stretched. Notify before the next frame on mount and on every change of what is drawn.
+  const contentRef = useRef<{ notifyAncestorsChanged?: () => void } | null>(null);
+  useLayoutEffect(() => {
+    contentRef.current?.notifyAncestorsChanged?.();
+  }, [key, metrics]);
+
   const width = Math.max(1, Math.ceil(metrics.width));
   const height = Math.max(1, Math.ceil(metrics.height));
   const worldScale = metrics.scale * pixelSize;
@@ -113,7 +119,7 @@ export const Text = forwardRef<any, TextProps>(function Text({
   ];
 
   return (
-    <Content width={width} height={height} flexShrink={0} {...props}>
+    <Content ref={contentRef} width={width} height={height} flexShrink={0} {...props}>
       <MsdfText
         ref={forwardedRef}
         text={text}
