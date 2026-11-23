@@ -3,6 +3,7 @@ import {
   applyProps,
   createPortal,
   extend,
+  getScheduler,
   useFrame,
   useStore,
   useThree,
@@ -118,15 +119,72 @@ function usePropsBinding() {
 
 type PropsBinding = ReturnType<typeof usePropsBinding>;
 
+type UikitRootBucket = {
+  roots: Set<{ update(delta: number): void }>;
+  unregister: () => void;
+};
+
+const uikitRootBuckets = new Map<string, UikitRootBucket>();
+
+function registerUikitRoot(rootId: string, component: { update(delta: number): void }): void {
+  let bucket = uikitRootBuckets.get(rootId);
+  if (bucket == null) {
+    const roots = new Set<{ update(delta: number): void }>();
+    const unregister = getScheduler().register(
+      (_state: unknown, delta: number) => {
+        const deltaMs = delta * 1000;
+        for (const root of roots) {
+          root.update(deltaMs);
+        }
+      },
+      { id: `uikit-roots-${rootId}`, rootId },
+    );
+    bucket = { roots, unregister };
+    uikitRootBuckets.set(rootId, bucket);
+  }
+  bucket.roots.add(component);
+}
+
+function unregisterUikitRoot(rootId: string, component: { update(delta: number): void }): void {
+  const bucket = uikitRootBuckets.get(rootId);
+  if (bucket == null) return;
+  bucket.roots.delete(component);
+  if (bucket.roots.size === 0) {
+    bucket.unregister();
+    uikitRootBuckets.delete(rootId);
+  }
+}
+
 function useSetup(
   ref: { current: any },
   inProps: Record<string, unknown>,
   args: Array<unknown>,
   { binding, bind }: PropsBinding,
 ) {
-  useFrame((_, delta) => {
-    ref.current?.update(delta * 1000);
-  });
+  const store = useStore();
+  useEffect(() => {
+    const component = ref.current;
+    if (component == null) return;
+    const rootId = (store.getState() as { internal?: { rootId?: string } }).internal?.rootId;
+    if (rootId == null) return;
+    let registered = false;
+    const unsubscribe = effect(() => {
+      const isRoot = component.root?.value?.component === component;
+      if (isRoot && !registered) {
+        registered = true;
+        registerUikitRoot(rootId, component);
+      } else if (!isRoot && registered) {
+        registered = false;
+        unregisterUikitRoot(rootId, component);
+      }
+    });
+    return () => {
+      unsubscribe();
+      if (registered) {
+        unregisterUikitRoot(rootId, component);
+      }
+    };
+  }, [store]);
 
   const renderer = useThree((state) => state.gl) as unknown as Record<string, unknown>;
 
