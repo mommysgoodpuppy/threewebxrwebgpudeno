@@ -186,7 +186,7 @@ function useSetup(
     };
   }, [store]);
 
-  const renderer = useThree((state) => state.gl) as unknown as Record<string, unknown>;
+  const renderer = useThree((state) => state.renderer) as unknown as Record<string, unknown>;
 
   useEffect(() => {
     if ("localClippingEnabled" in renderer) {
@@ -335,7 +335,7 @@ export const Fullscreen = forwardRef<any, FullscreenProperties>(
     wrapper.parent?.remove(wrapper);
     (camera as unknown as THREE.Object3D).add(wrapper as unknown as THREE.Object3D);
 
-    const renderer = useThree((state) => state.gl);
+    const renderer = useThree((state) => state.renderer);
     const renderContext = useRenderContext();
     const ref = useRef<any>(null);
     useImperativeHandle(forwardedRef, () => ref.current, []);
