@@ -1,9 +1,6 @@
 import { Box3, InstancedBufferAttribute, Mesh, Object3DEventMap, Sphere } from 'three'
-import { createPanelGeometry } from '../../submodules/uikit/packages/uikit/src/panel/utils.ts'
-import {
-  instancedPanelDepthMaterial,
-  instancedPanelDistanceMaterial,
-} from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { createPanelGeometry } from '../../submodules/uikit/packages/uikit/src/panel/geometry.ts';
+import { instancedPanelDepthMaterial, instancedPanelDistanceMaterial } from '../../submodules/uikit/packages/uikit/src/panel/material/depth.ts';
 import { RootContext } from '../context.ts'
 import { computeWorldToGlobalMatrix } from '../../submodules/uikit/packages/uikit/src/utils.ts'
 

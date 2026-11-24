@@ -2,13 +2,14 @@ import { computed, Signal, signal } from '@preact/signals-core'
 import { Box3, Color, Matrix4, Mesh, MeshBasicMaterial, Object3D, Plane, Quaternion, Vector3 } from 'three'
 import { ElementType, OrderInfo, setupOrderInfo, setupRenderOrder } from '../../submodules/uikit/packages/uikit/src/order.ts'
 import { setupInstancedPanel } from '../panel/instanced-panel.ts'
-import { getDefaultPanelMaterialConfig, writeColor } from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { getDefaultPanelMaterialConfig } from '../../submodules/uikit/packages/uikit/src/panel/material/config.ts';
+import { writeColor } from '../../submodules/uikit/packages/uikit/src/panel/material/color.ts';
 import { Component } from './component.ts'
 import { computedPanelGroupDependencies } from '../panel/instanced-panel-group.ts'
 import { BaseOutProperties, InProperties, Properties, WithSignal } from '../../submodules/uikit/packages/uikit/src/properties/index.ts'
 import { abortableEffect, alignmentZMap, computeWorldToGlobalMatrix, setupMatrixWorldUpdate } from '../../submodules/uikit/packages/uikit/src/utils.ts'
 import { createGlobalClippingPlanes } from '../../submodules/uikit/packages/uikit/src/clipping.ts'
-import { makeClippedCast } from '../../submodules/uikit/packages/uikit/src/panel/interaction-panel-mesh.ts'
+import { makeClippedCast } from '../../submodules/uikit/packages/uikit/src/panel/interaction/clipped-cast.ts';
 import { InstancedGlyphMesh, toAbsoluteNumber } from '../../submodules/uikit/packages/uikit/src/text/index.ts'
 import { InstancedPanelMesh } from '../panel/instanced-panel-mesh.ts'
 import { componentDefaults } from '../../submodules/uikit/packages/uikit/src/properties/defaults.ts'

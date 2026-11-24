@@ -14,7 +14,7 @@ import {
   updateSortedBucketsAllocation,
   resizeSortedBucketsSpace,
 } from '../../submodules/uikit/packages/uikit/src/allocation/sorted-buckets.ts'
-import { MaterialClass, createPanelMaterial } from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { MaterialClass, createPanelMaterial } from '../../submodules/uikit/packages/uikit/src/panel/material/create.ts';
 import { canUseWebgpuPanelMaterial, createWebgpuPanelMaterial } from './panel-material-webgpu.ts'
 import { InstancedPanel } from './instanced-panel.ts'
 import { InstancedPanelMesh } from './instanced-panel-mesh.ts'

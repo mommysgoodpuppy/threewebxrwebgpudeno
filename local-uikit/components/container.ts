@@ -3,7 +3,7 @@ import { Matrix4, Vector2Tuple, Vector3, Vector2 } from 'three'
 import { ClippingRect, computedClippingRect } from '../../submodules/uikit/packages/uikit/src/clipping.ts'
 import { ElementType, setupOrderInfo } from '../../submodules/uikit/packages/uikit/src/order.ts'
 import { setupInstancedPanel } from '../panel/instanced-panel.ts'
-import { getDefaultPanelMaterialConfig } from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { getDefaultPanelMaterialConfig } from '../../submodules/uikit/packages/uikit/src/panel/material/config.ts';
 import {
   computedAnyAncestorScrollable,
   computedGlobalScrollMatrix,

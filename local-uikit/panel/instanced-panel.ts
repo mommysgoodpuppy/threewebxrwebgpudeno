@@ -6,7 +6,7 @@ import { Inset } from '../../submodules/uikit/packages/uikit/src/flex/node.ts'
 import { InstancedPanelGroup, PanelGroupProperties } from './instanced-panel-group.ts'
 import { abortableEffect, ColorRepresentation } from '../../submodules/uikit/packages/uikit/src/utils.ts'
 import { OrderInfo } from '../../submodules/uikit/packages/uikit/src/order.ts'
-import { PanelMaterialConfig } from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { PanelMaterialConfig } from '../../submodules/uikit/packages/uikit/src/panel/material/config.ts';
 import { BaseOutProperties, Properties } from '../../submodules/uikit/packages/uikit/src/properties/index.ts'
 import { RootContext } from '../context.ts'
 

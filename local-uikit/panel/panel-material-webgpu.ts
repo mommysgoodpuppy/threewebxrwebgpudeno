@@ -1,6 +1,6 @@
 import { FrontSide, Material, MeshBasicMaterial, MeshBasicNodeMaterial } from 'three'
 import * as TSL from 'three/tsl'
-import { MaterialClass } from '../../submodules/uikit/packages/uikit/src/panel/panel-material.ts'
+import { MaterialClass } from '../../submodules/uikit/packages/uikit/src/panel/material/create.ts';
 
 function unpackBorderRadius(packedRadius: TSL.NodeRepresentation, height: TSL.NodeRepresentation) {
   return TSL.vec4(
