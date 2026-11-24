@@ -1,8 +1,18 @@
-import { FrontSide, Material, MeshBasicMaterial, MeshBasicNodeMaterial } from 'three'
+import {
+  DynamicDrawUsage,
+  FrontSide,
+  InstancedBufferAttribute,
+  Material,
+  MeshBasicMaterial,
+  MeshBasicNodeMaterial,
+  Object3D,
+} from 'three/webgpu'
 import * as TSL from 'three/tsl'
-import { MaterialClass } from '../../submodules/uikit/packages/uikit/src/panel/material/create.ts';
+import type { MaterialClass } from '../../submodules/uikit/packages/uikit/src/panel/material/create.ts'
+import { InstancedPanelMesh } from '../../submodules/uikit/packages/uikit/src/panel/instance/mesh.ts'
 
-function unpackBorderRadius(packedRadius: TSL.NodeRepresentation, height: TSL.NodeRepresentation) {
+// deno-lint-ignore no-explicit-any
+function unpackBorderRadius(packedRadius: any, height: any) {
   return TSL.vec4(
     TSL.floor(packedRadius.div(125000)).mod(50),
     TSL.floor(packedRadius.div(2500)).mod(50),
@@ -11,9 +21,11 @@ function unpackBorderRadius(packedRadius: TSL.NodeRepresentation, height: TSL.No
   ).mul(0.01).mul(height)
 }
 
-function createRoundedRectSdf(localUv: TSL.NodeRepresentation, halfSize: TSL.NodeRepresentation, radius: TSL.NodeRepresentation) {
+// deno-lint-ignore no-explicit-any
+function createRoundedRectSdf(localUv: any, halfSize: any, radius: any) {
   const corner = halfSize.sub(TSL.vec2(radius))
-  const q = TSL.abs(localUv).sub(corner)
+  // deno-lint-ignore no-explicit-any
+  const q: any = TSL.abs(localUv).sub(corner)
   return q.max(TSL.vec2(0)).length().add(q.x.max(q.y).min(0)).sub(radius)
 }
 
@@ -64,4 +76,90 @@ export function createWebgpuPanelMaterial(_MaterialClass: MaterialClass): Materi
   material.alphaTest = 0.001
 
   return material
+}
+
+type WebgpuPanelSyncState = {
+  dataAttr: InstancedBufferAttribute
+  version: number
+  attrs: [
+    InstancedBufferAttribute,
+    InstancedBufferAttribute,
+    InstancedBufferAttribute,
+    InstancedBufferAttribute,
+  ]
+}
+
+const webgpuPanelSync = new WeakMap<InstancedPanelMesh, WebgpuPanelSyncState>()
+
+/**
+ * WebGPU fallback for upstream `@pmndrs/uikit` `InstancedPanelMesh`: swaps WebGL `onBeforeCompile`
+ * `MeshBasicMaterial` to the TSL `MeshBasicNodeMaterial` and mirrors the 16-float `aData` buffer
+ * into four `vec4` attributes (`aData0..aData3`) when `aData.version` changes.
+ */
+export function syncWebgpuPanelFallback(rootComponent: Object3D): void {
+  const children = rootComponent.children
+  for (let i = 0; i < children.length; i++) {
+    const child = children[i]
+    if (!(child instanceof InstancedPanelMesh)) continue
+
+    const mat = child.material as (Material & { isMeshBasicNodeMaterial?: boolean }) | undefined
+    if (mat != null && !mat.isMeshBasicNodeMaterial && mat.type === 'MeshBasicMaterial' && canUseWebgpuPanelMaterial(MeshBasicMaterial)) {
+      const nodeMat = createWebgpuPanelMaterial(MeshBasicMaterial)
+      nodeMat.depthTest = mat.depthTest
+      nodeMat.depthWrite = mat.depthWrite
+      child.material = nodeMat
+    }
+
+    const aData = child.geometry.attributes.aData as InstancedBufferAttribute | undefined
+    if (aData == null) continue
+
+    let state = webgpuPanelSync.get(child)
+    const count = Math.floor(aData.array.length / 16)
+    if (state == null || state.dataAttr !== aData) {
+      const makeAttr = () => {
+        const attr = new InstancedBufferAttribute(new Float32Array(count * 4), 4, false)
+        attr.setUsage(DynamicDrawUsage)
+        return attr
+      }
+      const attrs: WebgpuPanelSyncState['attrs'] = [makeAttr(), makeAttr(), makeAttr(), makeAttr()]
+      child.geometry.attributes.aData0 = attrs[0]
+      child.geometry.attributes.aData1 = attrs[1]
+      child.geometry.attributes.aData2 = attrs[2]
+      child.geometry.attributes.aData3 = attrs[3]
+      state = { dataAttr: aData, version: -1, attrs }
+      webgpuPanelSync.set(child, state)
+    }
+
+    if (state.version === aData.version) continue
+    const src = aData.array
+    const d0 = state.attrs[0].array as Float32Array
+    const d1 = state.attrs[1].array as Float32Array
+    const d2 = state.attrs[2].array as Float32Array
+    const d3 = state.attrs[3].array as Float32Array
+    for (let idx = 0; idx < count; idx++) {
+      const s = idx * 16
+      const d = idx * 4
+      d0[d] = src[s]!
+      d0[d + 1] = src[s + 1]!
+      d0[d + 2] = src[s + 2]!
+      d0[d + 3] = src[s + 3]!
+      d1[d] = src[s + 4]!
+      d1[d + 1] = src[s + 5]!
+      d1[d + 2] = src[s + 6]!
+      d1[d + 3] = src[s + 7]!
+      d2[d] = src[s + 8]!
+      d2[d + 1] = src[s + 9]!
+      d2[d + 2] = src[s + 10]!
+      d2[d + 3] = src[s + 11]!
+      d3[d] = src[s + 12]!
+      d3[d + 1] = src[s + 13]!
+      d3[d + 2] = src[s + 14]!
+      d3[d + 3] = src[s + 15]!
+    }
+    state.attrs[0].needsUpdate = true
+    state.attrs[1].needsUpdate = true
+    state.attrs[2].needsUpdate = true
+    state.attrs[3].needsUpdate = true
+    state.version = aData.version
+  }
 }

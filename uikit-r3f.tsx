@@ -18,22 +18,23 @@ import React, {
   useRef,
 } from "react";
 import * as THREE from "three/webgpu";
-import type { RenderContext } from "./local-uikit/context.ts";
+import type { RenderContext } from "./submodules/uikit/packages/uikit/src/context.ts";
 import { reversePainterSortStable } from "./submodules/uikit/packages/uikit/src/order.ts";
 import {
   type BoundingBox,
+  Content as VanillaContent,
   type ContentProperties as VanillaContentProperties,
-} from "./local-uikit/components/content.ts";
+} from "./submodules/uikit/packages/uikit/src/components/content.ts";
 import {
+  Container as VanillaContainer,
   type ContainerProperties as VanillaContainerProperties,
-} from "./local-uikit/components/container.ts";
-import { Content as VanillaContent } from "./local-uikit/components/content.ts";
-import { Container as VanillaContainer } from "./local-uikit/components/container.ts";
+} from "./submodules/uikit/packages/uikit/src/components/container.ts";
 import type { EventHandlersProperties as EventHandlers } from "./submodules/uikit/packages/uikit/src/events.ts";
 import {
   Fullscreen as VanillaFullscreen,
   type FullscreenProperties as VanillaFullscreenProperties,
 } from "./submodules/uikit/packages/uikit/src/components/fullscreen.ts";
+import { syncWebgpuPanelFallback } from "./local-uikit/panel/panel-material-webgpu.ts";
 
 type ClassListProperties = { classList?: Array<string | Record<string, unknown>> };
 
@@ -119,22 +120,32 @@ function usePropsBinding() {
 
 type PropsBinding = ReturnType<typeof usePropsBinding>;
 
+type UikitRootComponent = THREE.Object3D & { update(delta: number): void };
+
 type UikitRootBucket = {
-  roots: Set<{ update(delta: number): void }>;
+  roots: Set<UikitRootComponent>;
   unregister: () => void;
 };
 
 const uikitRootBuckets = new Map<string, UikitRootBucket>();
 
-function registerUikitRoot(rootId: string, component: { update(delta: number): void }): void {
+function registerUikitRoot(
+  rootId: string,
+  component: UikitRootComponent,
+  isWebGPU: () => boolean,
+): void {
   let bucket = uikitRootBuckets.get(rootId);
   if (bucket == null) {
-    const roots = new Set<{ update(delta: number): void }>();
+    const roots = new Set<UikitRootComponent>();
     const unregister = getScheduler().register(
       (_state: unknown, delta: number) => {
         const deltaMs = delta * 1000;
+        const webgpu = isWebGPU();
         for (const root of roots) {
           root.update(deltaMs);
+          if (webgpu) {
+            syncWebgpuPanelFallback(root);
+          }
         }
       },
       { id: `uikit-roots-${rootId}`, rootId },
@@ -145,7 +156,7 @@ function registerUikitRoot(rootId: string, component: { update(delta: number): v
   bucket.roots.add(component);
 }
 
-function unregisterUikitRoot(rootId: string, component: { update(delta: number): void }): void {
+function unregisterUikitRoot(rootId: string, component: UikitRootComponent): void {
   const bucket = uikitRootBuckets.get(rootId);
   if (bucket == null) return;
   bucket.roots.delete(component);
@@ -167,12 +178,14 @@ function useSetup(
     if (component == null) return;
     const rootId = (store.getState() as { internal?: { rootId?: string } }).internal?.rootId;
     if (rootId == null) return;
+    const isWebGPU = () =>
+      Boolean((store.getState() as { renderer?: { isWebGPURenderer?: boolean } }).renderer?.isWebGPURenderer);
     let registered = false;
     const unsubscribe = effect(() => {
       const isRoot = component.root?.value?.component === component;
       if (isRoot && !registered) {
         registered = true;
-        registerUikitRoot(rootId, component);
+        registerUikitRoot(rootId, component, isWebGPU);
       } else if (!isRoot && registered) {
         registered = false;
         unregisterUikitRoot(rootId, component);

@@ -1,6 +1,0 @@
-export * from '../../submodules/uikit/packages/uikit/src/panel/geometry.ts'
-export * from '../../submodules/uikit/packages/uikit/src/panel/interaction/index.ts'
-export * from '../../submodules/uikit/packages/uikit/src/panel/material/index.ts'
-export * from './instanced-panel-mesh.ts'
-export * from './instanced-panel-group.ts'
-export * from './instanced-panel.ts'
