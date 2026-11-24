@@ -1,6 +1,6 @@
 import * as THREE from "three/webgpu";
 import * as TSL from "three/tsl";
-import { PNG } from "npm:pngjs";
+import { PNG } from "pngjs";
 import MSDFTextGeometry from "./submodules/three-msdf-text-utils/src/MSDFTextGeometry/index.js";
 import MSDFTextNodeMaterial from "./submodules/three-msdf-text-utils/src/MSDFTextNodeMaterial/index.js";
 

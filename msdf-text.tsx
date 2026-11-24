@@ -2,7 +2,7 @@ import React, { forwardRef, useEffect, useMemo, useState } from "react";
 import { ConstructWithPropsContext } from "./uikit-r3f.tsx";
 import { Buffer } from "node:buffer";
 import * as THREE from "three/webgpu";
-import { PNG } from "npm:pngjs";
+import { PNG } from "pngjs";
 import { MSDFTextGeometry, MSDFTextNodeMaterial } from "./vendor/three-msdf-text-utils/index.ts";
 import type { WebXRRaythreeTextUserData } from "../../classes/webxrRaythreeUi.ts";
 
